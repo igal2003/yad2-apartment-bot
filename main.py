@@ -2,7 +2,6 @@ import json
 import os
 
 from scraper import fetch_listings
-from filters import is_good_listing
 from notifier import send_message
 from transport import nearest_tram_station
 from scoring import calculate_score
@@ -10,52 +9,30 @@ from scoring import calculate_score
 SEEN_FILE = "seen_ads.json"
 
 
-def load_seen():
-    if not os.path.exists(SEEN_FILE):
-        return set()
+def format_summary(listings):
+    message = f"🏠 Scan Yad2 terminé\n\n{len(listings)} annonces analysées :\n"
 
-    with open(SEEN_FILE, "r") as f:
-        return set(json.load(f))
+    for i, l in enumerate(listings, start=1):
+        message += f"""
 
-
-def save_seen(seen):
-    with open(SEEN_FILE, "w") as f:
-        json.dump(list(seen), f)
-
-
-def format_listing(l):
-    return f"""
-🏠 Nouvelle dira intéressante
-
+{i}. ⭐ {l.get('score')}/100
 📍 {l.get('neighborhood')}, {l.get('city')}
 💰 {l.get('price')} ₪
 🚪 {l.get('rooms')} חדרים
 📐 {l.get('sqm')} m²
-
-🚋 Tram le plus proche : {l.get('tram_station')}
-📏 Distance tram : {l.get('tram_distance_m')} m
-
-⭐ Score : {l.get('score')}/100
-
+🚋 {l.get('tram_station')} — {l.get('tram_distance_m')} m
 🔗 {l.get('url')}
 """
 
+    return message
+
 
 def scan_once():
-    seen = load_seen()
-
     listings = fetch_listings()
-    good_listings = [l for l in listings if is_good_listing(l)]
 
-    print(f"Annonces trouvées: {len(listings)}")
-    print(f"Annonces intéressantes: {len(good_listings)}")
+    scored_listings = []
 
-    for listing in good_listings:
-        token = listing.get("token")
-
-        if token in seen:
-            continue
-
+    for listing in listings:
         station, distance = nearest_tram_station(
             listing.get("lat"),
             listing.get("lon")
@@ -65,10 +42,13 @@ def scan_once():
         listing["tram_distance_m"] = distance
         listing["score"] = calculate_score(listing)
 
-        send_message(format_listing(listing))
+        scored_listings.append(listing)
 
-        seen.add(token)
-        save_seen(seen)
+    scored_listings.sort(key=lambda x: x.get("score", 0), reverse=True)
+
+    print(f"Annonces trouvées: {len(scored_listings)}")
+
+    send_message(format_summary(scored_listings))
 
 
 def main():
