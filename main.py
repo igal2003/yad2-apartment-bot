@@ -53,7 +53,6 @@ def scan_once():
     for listing in good_listings:
         token = listing.get("token")
 
-        # déjà envoyé → skip
         if token in seen:
             continue
 
@@ -73,7 +72,7 @@ def scan_once():
 
 
 def main():
-    print("GitHub scan...")
+    print("Scan Yad2...")
     scan_once()
     print("Scan terminé.")
 
