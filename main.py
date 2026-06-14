@@ -1,4 +1,3 @@
-import time
 import json
 import os
 
@@ -54,6 +53,7 @@ def scan_once():
     for listing in good_listings:
         token = listing.get("token")
 
+        # déjà envoyé → skip
         if token in seen:
             continue
 
@@ -73,11 +73,9 @@ def scan_once():
 
 
 def main():
-    while True:
-        print("Scan Yad2...")
-        scan_once()
-        print("Pause 2 minutes...")
-        time.sleep(120)
+    print("GitHub scan...")
+    scan_once()
+    print("Scan terminé.")
 
 
 if __name__ == "__main__":
